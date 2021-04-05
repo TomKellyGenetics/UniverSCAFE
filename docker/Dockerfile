@@ -58,11 +58,11 @@ RUN git clone https://github.com/linsalrob/fastq-pair.git \
 
 #---[2021/03/22 15:53] update apt-get, grab R 3.6.3 and perl
 #---[2021/03/22 15:53] update apt-get, grab R 3.6.3 and perl
-RUN apt update -qq \
- && apt install --no-install-recommends software-properties-common dirmngr \
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends software-properties-common dirmngr \
  && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 \
- && add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/" \
- && echo "deb http://cloud.r-project.org/bin/linux/debian stretch-cran35/" >>/etc/apt/sources.list \
+ && add-apt-repository -y "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/" \
+ && echo "deb http://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/" >>/etc/apt/sources.list \
  && apt-get update \
  && apt-get upgrade -y \
  && apt-get install -y perl git wget \
