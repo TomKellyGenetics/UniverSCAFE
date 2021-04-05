@@ -70,22 +70,29 @@ use Cwd 'abs_path';
        ┌─ᐅ 5'-O~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-3'
  ...===┴========================================================================================...
 
-                      Single Cell Analysis of Five'End (SCAFE) Tool Suite 
-                              ---> download.demo.input <---
-                        <--- download, demo input data for testing --->
+                      Single Cell Analysis of Five-prime End (SCAFE) Tool Suite 
+                           ---> download.resources.genome <---
+                     <--- download, reference genome to resources dir --->
 
  Description:
-   This scripts download demo data and save in ./demo/input dir.
+   This script download reference genome data and save in ./resources/genome.
 
  Usage:
-   download.demo.input
+   download.resources.genome --genome
+   
+   --genome <required> [string] name of genome reference, currently available genomes:
+                                hg19.gencode_v32lift37
+                                hg38.gencode_v32
+                                mm10.gencode_vM25
+                                TAIR10.AtRTDv2
 
  Dependencies:
    wget
    tar
 
  For demo, cd to SCAFE dir and run,
-   ./script/download.demo.input
+   scafe.download.resources.genome \
+   --genome=hg19.gencode_v32lift37
 
 =head1 VERSION
 
@@ -118,10 +125,15 @@ use Cwd 'abs_path';
 #	section 0_startTasks
 #
 #<section ID="startTasks" num="0">
-my $demo_data_url = "https://www.dropbox.com/s/gqcd8i8d9fbqth0/input.tar.gz";
-&readParameters();#->151
-my ($scafe_dir, $script_dir, $demo_dir) = &prepDir();#->125
-&download($demo_dir, $demo_data_url);#->102
+my $genome_url_hsh_ref = {
+	'hg19.gencode_v32lift37' => "https://www.dropbox.com/s/zxfbfsmfcekerrf/hg19.gencode_v32lift37.tar.gz",
+	'hg38.gencode_v32' => "https://www.dropbox.com/s/79zqq95toaxnafh/hg38.gencode_v32.tar.gz",
+	'mm10.gencode_vM25' => "https://www.dropbox.com/s/r7mmc3z2uzqtt7d/mm10.gencode_vM25.tar.gz",
+	'TAIR10.AtRTDv2' => "https://www.dropbox.com/s/nwofsc08i7a2i9b/TAIR10.AtRTDv2.tar.gz",
+};
+my ($genome) = &readParameters();#->171
+my ($scafe_dir, $script_dir, $genome_dir) = &prepDir();#->145
+&download($genome_dir, $genome, $genome_url_hsh_ref);#->117
 #<\section>
 #====================================================================================================================================================#
 
@@ -152,20 +164,25 @@ sub download {
 #	subroutineCategory: unassigned
 #	dependOnSub: >none
 #	appearInSub: >none
-#	primaryAppearInSection: 0_startTasks|69
+#	primaryAppearInSection: 0_startTasks|79
 #	secondaryAppearInSection: >none
-#	input: $demo_data_url, $demo_dir
+#	input: $genome, $genome_dir, $genome_url_hsh_ref
 #	output: 
-#	toCall: &download($demo_dir, $demo_data_url);
-#	calledInLine: 75
+#	toCall: &download($genome_dir, $genome, $genome_url_hsh_ref);
+#	calledInLine: 90
 #....................................................................................................................................................#
-	my ($demo_dir, $demo_data_url) = @_;
+	my ($genome_dir, $genome, $genome_url_hsh_ref) = @_;
 	
-	my $tar_gz_path = "$demo_dir/input.tar.gz";
+	my $tar_gz_path = "$genome_dir/$genome.tar.gz";
+	my $genome_url = $genome_url_hsh_ref->{$genome};
+	
+	die "genome $genome is not avaiable\n" if not exists $genome_url_hsh_ref->{$genome};
+
+	print "Cleaning up $genome_dir/$genome/";
 	system ("rm -f $tar_gz_path");
-	system ("rm -rf $demo_dir/input/");
-	system ("wget $demo_data_url -P $demo_dir");
-	system ("tar -xzvf $tar_gz_path -C $demo_dir");
+	system ("rm -rf $genome_dir/$genome/");
+	system ("wget $genome_url -P $genome_dir");
+	system ("tar -xzvf $tar_gz_path -C $genome_dir");
 	system ("rm $tar_gz_path");
 
 	return ();
@@ -175,12 +192,12 @@ sub prepDir {
 #	subroutineCategory: unassigned
 #	dependOnSub: >none
 #	appearInSub: >none
-#	primaryAppearInSection: 0_startTasks|69
+#	primaryAppearInSection: 0_startTasks|79
 #	secondaryAppearInSection: >none
 #	input: none
-#	output: $demo_dir, $scafe_dir, $script_dir
-#	toCall: my ($scafe_dir, $script_dir, $demo_dir) = &prepDir();
-#	calledInLine: 74
+#	output: $genome_dir, $scafe_dir, $script_dir
+#	toCall: my ($scafe_dir, $script_dir, $genome_dir) = &prepDir();
+#	calledInLine: 89
 #....................................................................................................................................................#
 
 	my $scriptAbsPath = abs_path($0);
@@ -191,29 +208,34 @@ sub prepDir {
 	my $script_dir = join "/", @path_split[0..$script_dir_index];
 
 	my @mkDirAry = ();
-	my $demo_dir = $scafe_dir."/demo/"; push @mkDirAry, $demo_dir;
+	my $genome_dir = $scafe_dir."/resources/genome/"; push @mkDirAry, $genome_dir;
 	foreach my $dir (@mkDirAry) {system ("mkdir -pm 755 $dir");}
 
-	return ($scafe_dir, $script_dir, $demo_dir);
+	return ($scafe_dir, $script_dir, $genome_dir);
 }
 sub readParameters {
 #....................................................................................................................................................#
 #	subroutineCategory: general
 #	dependOnSub: >none
 #	appearInSub: >none
-#	primaryAppearInSection: 0_startTasks|69
+#	primaryAppearInSection: 0_startTasks|79
 #	secondaryAppearInSection: >none
 #	input: none
-#	output: 
-#	toCall: &readParameters();
-#	calledInLine: 73
+#	output: $genome
+#	toCall: my ($genome) = &readParameters();
+#	calledInLine: 88
 #....................................................................................................................................................#
 	
+	my ($genome);
+	
 	GetOptions 	(
-		'help'				=>	sub { HelpMessage(0) },
-	);
+		"genome=s"	=>	\$genome,
+		'help'		=>	sub { HelpMessage(0) },
+	) or HelpMessage(1);
 
-	return();
+	HelpMessage(1) unless $genome;
+
+	return($genome);
 
 }
 

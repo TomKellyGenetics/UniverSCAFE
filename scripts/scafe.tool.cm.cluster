@@ -74,18 +74,18 @@ use Cwd 'abs_path';
        ┌─ᐅ 5'-O~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-3'
  ...===┴========================================================================================...
 
-                      Single Cell Analysis of Five'End (SCAFE) Tool Suite 
-                                   ---> tool.cm.cluster <---
+                      Single Cell Analysis of Five-prime End (SCAFE) Tool Suite 
+                                   ---> scafe.tool.cm.cluster <---
                           <--- tool, common mode, cluster ctss --->
 
  Description:
    This tool generate TSS cluster from a ctss bed file, using an external tool paraclu with user-defined cutoffs
 
  Usage:
-   tool.cm.cluster [options] --cluster_ctss_bed_path --outputPrefix --outDir
+   scafe.tool.cm.cluster [options] --cluster_ctss_bed_path --outputPrefix --outDir
    
    --cluster_ctss_bed_path       <required> [string]  ctss file used for clustering,
-                                                      "collapse" ctss file from tool.sc.bam_to_ctss.pl, 
+                                                      "collapse" ctss file from scafe.tool.sc.bam_to_ctss.pl, 
                                                       4th column is number of cells and 5th column is number UMI
    --outputPrefix                <required> [string]  prefix for the output files
    --outDir                      <required> [string]  directory for the output files
@@ -114,7 +114,7 @@ use Cwd 'abs_path';
    bedtools
 
  For demo, cd to SCAFE dir and run,
-   ./scripts/tool.cm.cluster \
+   scafe.tool.cm.cluster \
    --overwrite=yes \
    --cluster_ctss_bed_path=./demo/output/sc.solo/bam_to_ctss/demo/bed/demo.collapse.ctss.bed.gz \
    --outputPrefix=demo \
@@ -288,7 +288,7 @@ sub checkAllExecutable {
 	
 	{
 		my $stdOut = `$cut_sh_path 55C7128A 2>&1`;
-		if ($stdOut =~ m/awk: fatal: cannot open/) {
+		if ($stdOut =~ m/awk:/) {
 			&reportAndLogStatus("Checking: paraclu-cut found.", 0, "\n");#->933
 		} else {
 			die "paraclu-cut is not installed properly. Quitting.\n";

@@ -13,12 +13,12 @@
  ...===┴========================================================================================...
  ```
 
-*SCAFE* (Single Cell Analysis of Five-prime Ends) provides an end-to-end solution for processing of single cell 5’end RNA-seq data. It takes a read alignment file (**.bam*) from single-cell RNA-5’end-sequencing (e.g. 10xGenomics Chromimum®), precisely maps the cDNA 5'ends (i.e. transcription start sites, TSS), filters for the artefacts and identifies genuine TSS clusters using logistic regression. Based on the TSS clusters, it defines transcribed cis-regulatory elements (tCRE) and annotated them to gene models. It then counts the UMI in tCRE in single cells and returns a tCRE UMI/cellbarcode matrix ready for downstream analyses, e.g. cell-type clustering, linking promoters to enhancers
+*SCAFE* (Single Cell Analysis of Five-prime Ends) provides an end-to-end solution for processing of single cell 5’end RNA-seq data. It takes a read alignment file \(\*.bam\) from single-cell RNA-5’end-sequencing (e.g. 10xGenomics Chromimum®), precisely maps the cDNA 5'ends (i.e. transcription start sites, TSS), filters for the artefacts and identifies genuine TSS clusters using logistic regression. Based on the TSS clusters, it defines transcribed cis-regulatory elements (tCRE) and annotated them to gene models. It then counts the UMI in tCRE in single cells and returns a tCRE UMI/cellbarcode matrix ready for downstream analyses, e.g. cell-type clustering, linking promoters to enhancers
 *etc* .
 
 ## Citing *SCAFE*
 
-Profiling of transcribed cis-regulatory elements in single cells. *bioRxiv*, 2021, [XXXXXX](https://XXXXXXXXXX/)
+Jonathan Moody and Tsukasa Kouno *et al*. Profiling of transcribed cis-regulatory elements in single cells. [bioRxiv 2021.04.04.438388](https://www.biorxiv.org/content/10.1101/2021.04.04.438388v1)
 
 ## What does *SCAFE* do?
 <div style="text-align:center"><img src=".github/images/tCRE_definition.png?" width="860"></div>
@@ -38,8 +38,11 @@ Profiling of cis-regulatory elements (CREs, mostly promoters and enhancers) in s
 A fraction of TSS identified based on read 5′ends from template switching (TS) reactions (used in 10xGenomics Chromimum®) may not be genuine, attributed to various artefacts including strand invasion and other sources. This results in excessive artifactual TSS misidentified along the gene body, collectively known as “exon painting”. While strand invasion artefacts can be specifically minimized by considering the complementarity of TSS upstream sequence to TS oligo sequence, a non-negligible fraction of artefactual TSS remains after filtering for strand invasion. To minimize the artifactual TSS, *SCAFE* examines the properties of TSS clusters, as shown in **Figure (b)**, and devised a classifier to identify genuine TSS based on multiple logistic regression. This classifier, i.e. logistic probability, achieved excellent performance with AUC>0.98 across sequencing depths and outperformed all individual metrics. This is implemented in the tool ***filter***.
 
 ## Dependencies
+### TL;DR
+Go straight to the [Docker Image](#1) section if you do not want to deal with dependencies and already have [docker](https://www.docker.com/) installed.
+
 ### perl
-*SCAFE* is mainly written in perl (v5.24.1 or later). All scripts are standalone applications and **DO NOT require installations** of extra perl modules. Check whether perl is properly installed on your system.
+*SCAFE* is mainly written in perl (**v5.24.1 or later**). All scripts are standalone applications and **DO NOT require installations** of extra perl modules. Check whether perl is properly installed on your system.
 
 ```shell
 #--- Check your perl version
@@ -47,33 +50,43 @@ perl --version
 ```
 
 ### R
-*SCAFE* relies on R for logistic regression, ROC analysis and graph plotting. Rscript **(v3.5.1 or later)** and the following R packages have to be properly installed:
+*SCAFE* relies on R for logistic regression, ROC analysis and graph plotting. Rscript **(v3.6.1 or later)** and the following R packages have to be properly installed:
 
-* [ROCR](https://cran.r-project.org/web/packages/ROCR/readme/README.html), [PRROC](https://cran.r-project.org/web/packages/PRROC/index.html), [caret](https://cran.r-project.org/web/packages/caret/index.html), [e1071](https://cran.r-project.org/web/packages/e1071/index.html), [ggplot2](https://ggplot2.tidyverse.org/), [scales](https://cran.r-project.org/web/packages/scales/index.html), [reshape2](https://cran.r-project.org/web/packages/reshape2/index.html)
+* [ROCR](https://cran.r-project.org/web/packages/ROCR/readme/README.html), [PRROC](https://cran.r-project.org/web/packages/PRROC/index.html), [caret](https://cran.r-project.org/web/packages/caret/index.html), [e1071](https://cran.r-project.org/web/packages/e1071/index.html), [ggplot2](https://ggplot2.tidyverse.org/), [scales](https://cran.r-project.org/web/packages/scales/index.html), [reshape2](https://cran.r-project.org/web/packages/reshape2/index.html), [docopt](https://cran.r-project.org/web/packages/docopt/index.html), [data.table](https://cran.r-project.org/web/packages/data.table/index.html), [Matrix](https://cran.r-project.org/web/packages/Matrix/index.html), [R.utils](), [monocle3](https://cole-trapnell-lab.github.io/monocle3/docs/installation/), [cicero](https://cole-trapnell-lab.github.io/cicero-release/docs_m3/#installing-cicero)
 
 ```shell
-#--- Check your Rscript version, must be >3.5.1
+#--- Check your Rscript version, must be 3.6.1 ot later
 Rscript --version
 
 #--- Check your R packages, install if missing
-Rscript -e 'if (!require("ROCR")) install.packages("ROCR", repos = "http://cran.us.r-project.org")'
-Rscript -e 'if (!require("PRROC")) install.packages("PRROC", repos = "http://cran.us.r-project.org")'
-Rscript -e 'if (!require("caret")) install.packages("caret", repos = "http://cran.us.r-project.org")'
-Rscript -e 'if (!require("e1071")) install.packages("e1071", repos = "http://cran.us.r-project.org")'
-Rscript -e 'if (!require("ggplot2")) install.packages("ggplot2", repos = "http://cran.us.r-project.org")'
-Rscript -e 'if (!require("scales")) install.packages("scales", repos = "http://cran.us.r-project.org")'
-Rscript -e 'if (!require("reshape2")) install.packages("reshape2", repos = "http://cran.us.r-project.org")'
+Rscript -e 'install.packages("ROCR")'
+Rscript -e 'install.packages("PRROC")'
+Rscript -e 'install.packages("caret")'
+Rscript -e 'install.packages("e1071")'
+Rscript -e 'install.packages("ggplot2")'
+Rscript -e 'install.packages("scales")'
+Rscript -e 'install.packages("reshape2")'
+Rscript -e 'install.packages("docopt")'
+Rscript -e 'install.packages("data.table")'
+Rscript -e 'install.packages("Matrix", repos="http://R-Forge.R-project.org")'
+Rscript -e 'install.packages("R.utils")'
 ```
+
+Please refer to the respective homepages for installing [monocle3](https://cole-trapnell-lab.github.io/monocle3/docs/installation/) and [cicero](https://cole-trapnell-lab.github.io/cicero-release/docs_m3/#installing-cicero). Failed to install these two package will ***NOT*** affect the workflows. Only *scafe.tool.sc.link* requires these two packages.
+  
+
 ### Other 3rd party applications
 *SCAFE* also relies on a number of 3rd party applications. The binaries and executables (Linux) of these applications are distributed with this reprository in the directory ./resources/bin and **DO NOT require installations**.
 
 * [bigWigAverageOverBed](https://github.com/ENCODE-DCC/kentUtils), [bedGraphToBigWig](https://github.com/ENCODE-DCC/kentUtils),  [bedtools](https://bedtools.readthedocs.io/en/latest/), [samtools](http://www.htslib.org/), [paraclu](http://cbrc3.cbrc.jp/~martin/paraclu/), [paraclu-cut.sh](http://cbrc3.cbrc.jp/~martin/paraclu/)
 
 ### OS
-SCAFE was developed and tested on Debian GNU/Linux 9. Running SACFE on other OS are not guranteed.
+SCAFE was developed and tested on Debian GNU/Linux 9, with R (3.6.1) and perl (5.24.1) installed. Running SACFE on other OS with other version of R and perl are not guranteed. In you want to run *SCAFE* on other OS, we would recommend running it from docker container, see [below](#1). If you would like to run *SCAFE* natively on other OS, you have to ensure the R and perl versions, and might consider downloading and compiling the other 3rd party applications from their own sources. The binaries of 3rd party applications have to be execuatble in *SCAFE* directoty at ./resources/bin/.
 
-## Installing SCAFE
-Once you ensured the above dependencies are met, you are ready to download SCAFE to your system.
+
+
+## Installing *SCAFE*
+Once you ensured the above dependencies are met, you are ready to download *SCAFE* to your system.
 
 ### Clone this respository
 
@@ -86,80 +99,32 @@ cd /my/path/to/install/
 git clone https://github.com/chung-lab/SCAFE
 cd SCAFE
 
+#--- export SCAFE scripts dir to PATH for system-wide call of SCAFE commands 
+echo "export PATH=\$PATH:$(pwd)/scripts" >>~/.bashrc
+source ~/.bashrc
+
 #--- making sure the scripts and binaries are executable
 chmod 755 -R ./scripts/
 chmod 755 -R ./resources/bin/
 ```
 ### Check the dependencies
-SCAFE depends on perl, R and a number of 3rd party tools (as listed above). To ensure the dependencies, please run ./scripts/check.dependencies
+To ensure the dependencies, please run check.dependencies.
 
 ```shell
 #--- run check.dependencies to check 
-./scripts/check.dependencies
+scafe.check.dependencies
 ```
-If everything runs smoothly, you should see the following report on screen.
+### Docker image<a name="1"></a>
+If you have docker installed on your system, you might also consider pulling the *SCAFE* docker image and run it in a docker container. Once you are logged into the *SCAFE* docker container, the following tutorial on the demo data can be ran with exactly the same command. 
+
+To install docker, please see [here](https://www.docker.com/). Noted that all files reads/writes are within the docker container by default. To share files (i.e. input and output of *SCAFE*) between the container and the host, please see [here](https://flaviocopes.com/docker-access-files-outside-container/). If you are running Docker on a labtop, make sure the allocated resources (e.g. memory and disk space) are enough, see [here](https://docs.docker.com/docker-for-mac/). We suggest to allocate at least 16GB of memory.
 
 ```shell
+#---to pull the docker image
+docker pull cchon/scafe:latest
 
-===============================
-start checking
-===============================
-Check Type           Check Item                          Check Status
-===============      ===============                     ===============
-perl executables     workflow.sc.subsample               successful
-perl executables     workflow.sc.solo                    successful
-perl executables     workflow.sc.pool                    successful
-perl executables     workflow.bk.subsample               successful
-perl executables     workflow.bk.solo                    successful
-perl executables     workflow.bk.pool                    successful
-perl executables     tool.sc.subsample_ctss              successful
-perl executables     tool.sc.pool                        successful
-perl executables     tool.sc.count                       successful
-perl executables     tool.sc.bam_to_ctss                 successful
-perl executables     tool.cm.remove_strand_invader       successful
-perl executables     tool.cm.prep_genome                 successful
-perl executables     tool.cm.filter                      successful
-perl executables     tool.cm.ctss_to_bigwig              successful
-perl executables     tool.cm.cluster                     successful
-perl executables     tool.cm.annotate                    successful
-perl executables     tool.bk.subsample_ctss              successful
-perl executables     tool.bk.pool                        successful
-perl executables     tool.bk.count                       successful
-perl executables     tool.bk.bam_to_ctss                 successful
-perl executables     download.resources.genome           successful
-perl executables     download.demo.input                 successful
-perl executables     demo.test.run                       successful
-perl executables     check.install.dependencies          successful
-dropbox access       wget tar data                       successful
-3rd-party apps       bedtools                            successful
-3rd-party apps       samtools                            successful
-3rd-party apps       paraclu                             successful
-3rd-party apps       paraclu-cut.sh                      successful
-3rd-party apps       bedGraphToBigWig                    successful
-3rd-party apps       bigWigAverageOverBed                successful
-R version            v3.5 or later                       successful
-R packages           ROCR                                successful
-R packages           PRROC                               successful
-R packages           caret                               successful
-R packages           e1071                               successful
-R packages           ggplot2                             successful
-R packages           scales                              successful
-R packages           reshape2                            successful
-R scripts            benchmark_roc.R                     successful
-R scripts            build_glm.R                         successful
-R scripts            predict_prob.R                      successful
-===============================
-Finished checking
-===============================
-
-Successful for all checks. SCAFE should run well.
-```
-### Docker image
-If you have docker installed on your system, you might also consider loading *SCAFE* as a docker image
-
-```shell
-#---load the docker image (Not implemented yet)
-./scripts/XXX.XXX.XXX
+#---to run scafe within a docker container, run
+docker run -it cchon/scafe:latest
 ```
 
 ## Getting started with demo data
@@ -170,10 +135,10 @@ Demo data and reference genome must be downloaded for testing *SCAFE* on your sy
 
 ```shell
 #--- download the demo data using script download.demo.input
-./scripts/download.demo.input
+scafe.download.demo.input
 	
 #--- download the reference genome hg19.gencode_v32lift37 for testing demo data
-./scripts/download.resources.genome --genome=hg19.gencode_v32lift37
+scafe.download.resources.genome --genome=hg19.gencode_v32lift37
 ```
 
 ### Test run a single cell solo workflow for demo data
@@ -181,7 +146,7 @@ Now, let's test *SCAFE* with a workflow (*workflow.sc.solo*) that processes one 
 
 ```shell
 #--- check out the help message of workflow.sc.solo
-./scripts/workflow.sc.solo --help
+scafe.workflow.sc.solo --help
 ```
 It should print the help message as the followings:
 
@@ -197,15 +162,15 @@ It should print the help message as the followings:
       ┌─ᐅ 5'-O~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-3'
 ...===┴========================================================================================...
 
-                     Single Cell Analysis of Five-primeEnd (SCAFE) Tool Suite 
-                               ---> workflow.sc.solo <---
+                     Single Cell Analysis of Five-prime Ends (SCAFE) Tool Suite 
+                               ---> scafe.workflow.sc.solo <---
                  <--- workflow, single-cell mode, process a single sample --->
 
 Description:
   This workflow process a single sample, from a cellranger bam file to tCRE UMI/cellbarcode count matrix
 
 Usage:
-  workflow.sc.solo [options] --run_bam_path --run_cellbarcode_path --genome --run_tag --run_outDir
+  scafe.workflow.sc.solo [options] --run_bam_path --run_cellbarcode_path --genome --run_tag --run_outDir
 
   --run_bam_path         <required> [string]  bam file from cellranger, can be read 1 only or pair-end
   --run_cellbarcode_path <required> [string]  tsv file contains a list of cell barcodes,
@@ -236,7 +201,7 @@ Dependencies:
   paraclu-cut.sh
 
 For demo, cd to SCAFE dir and run,
-  ./scripts/workflow.sc.solo \
+  scafe.workflow.sc.solo \
   --overwrite=yes \
   --run_bam_path=./demo/input/sc.solo/demo.cellranger.bam \
   --run_cellbarcode_path=./demo/input/sc.solo/demo.barcodes.tsv.gz \
@@ -250,7 +215,7 @@ The help message details the input options, noted some are ***\<required\>*** an
 
 ```shell
 #--- run the workflow on the demo.cellranger.bam, it'll take a couple of minutes 
-./scripts/workflow.sc.solo \
+scafe.workflow.sc.solo \
 --overwrite=yes \
 --run_bam_path=./demo/input/sc.solo/demo.cellranger.bam \
 --run_cellbarcode_path=./demo/input/sc.solo/demo.barcodes.tsv.gz \
@@ -278,75 +243,90 @@ ls -alh ./demo/output/sc.solo/count/demo/matrix
 ```
 
 ### Test run all workflows on bulk and single cell data
-Finally, we recommended a test run for all 6 available workflows on the demo data. It will take around ~20 minutes on a regular system running at 5 threads (default).
+We recommended a test run for all 6 available workflows on the demo data. It will take around ~20 minutes on a regular system running at 5 threads (default).
 
 ```shell
 #--- check out the help message of demo.test.run
-./scripts/demo.test.run --help
+scafe.demo.test.run --help
 
 #--- run the all six available workflows on the demo bulk and single
 #--- it'll take a around 20 minutes
-./scripts/demo.test.run \
+scafe.demo.test.run \
 --overwrite=yes \
 --run_outDir=./demo/output/
 ```
-If everything runs smoothly, you should see the following report on screen
+
+### Test linking tCRE by coactivity
+Finally, try using *scafe.tool.sc.link* to run [cicero](https://cole-trapnell-lab.github.io/cicero-release/docs_m3/#abstract) for linking tCREs based on their coactivity. We provide a demo dataset from our PBMC data. *scafe.tool.sc.link* parallelize cicero by chromosomes, and it'll take around 20 minutes to run. We'll use *--max_thread=10* to run with 10 threads.
+```shell
+#--- check out the help message of scafe.tool.sc.link
+scafe.tool.sc.link --help
+
+#--- run scafe.tool.sc.link to link tCRE by their coactivity
+#--- it'll take a around 20 minutes
+scafe.tool.sc.link \
+--overwrite=yes \
+--max_thread=10 \
+--CRE_bed_path=./demo/input/sc.link/demo.CRE.coord.bed.gz \
+--CRE_info_path=./demo/input/sc.link/demo.CRE.info.tsv.gz \
+--count_dir=./demo/input/sc.link/matrix/ \
+--genome=hg19.gencode_v32lift37 \
+--outputPrefix=demo \
+--outDir=./demo/output/sc.link/
+```
+
+*scafe.tool.sc.link* calculates the coactivity between tCREs and define cis-coactivity networks of tCREs. You can check these results in the log directory.
 
 ```shell
-#=======================#
-Results of Demo Test Run.
-#=======================#
+#--- check connectivity
+gzip -dc ./demo/output/sc.link/demo/log/cicero.coactivity.link.redundant.non_zero.tsv.gz | head -n 20
 
-workflow                       tool                           status    
-==============                 ==============                 ==============
-workflow.bk.pool               manager                        successful
-workflow.bk.pool               tool.bk.pool                   successful
-workflow.bk.pool               tool.cm.cluster                successful
-workflow.bk.pool               tool.cm.filter                 successful
-workflow.bk.pool               tool.cm.ctss_to_bigwig         successful
-workflow.bk.pool               tool.cm.annotate               successful
-workflow.bk.pool               tool.bk.count                  successful
-workflow.bk.pool               tool.bk.count                  successful
-workflow.bk.solo               manager                        successful
-workflow.bk.solo               tool.bk.bam_to_ctss            successful
-workflow.bk.solo               tool.cm.cluster                successful
-workflow.bk.solo               tool.cm.filter                 successful
-workflow.bk.solo               tool.cm.ctss_to_bigwig         successful
-workflow.bk.solo               tool.cm.annotate               successful
-workflow.bk.solo               tool.bk.count                  successful
-workflow.bk.subsample          manager                        successful
-workflow.bk.subsample          tool.bk.subsample_ctss         successful
-workflow.bk.subsample          tool.cm.cluster                successful
-workflow.bk.subsample          tool.cm.filter                 successful
-workflow.bk.subsample          tool.cm.ctss_to_bigwig         successful
-workflow.bk.subsample          tool.cm.annotate               successful
-workflow.bk.subsample          tool.bk.count                  successful
-workflow.sc.pool               manager                        successful
-workflow.sc.pool               tool.sc.pool                   successful
-workflow.sc.pool               tool.cm.remove_strand_invader  successful
-workflow.sc.pool               tool.cm.cluster                successful
-workflow.sc.pool               tool.cm.filter                 successful
-workflow.sc.pool               tool.cm.ctss_to_bigwig         successful
-workflow.sc.pool               tool.cm.annotate               successful
-workflow.sc.pool               tool.sc.count                  successful
-workflow.sc.pool               tool.sc.count                  successful
-workflow.sc.solo               manager                        successful
-workflow.sc.solo               tool.sc.bam_to_ctss            successful
-workflow.sc.solo               tool.cm.remove_strand_invader  successful
-workflow.sc.solo               tool.cm.cluster                successful
-workflow.sc.solo               tool.cm.filter                 successful
-workflow.sc.solo               tool.cm.ctss_to_bigwig         successful
-workflow.sc.solo               tool.cm.annotate               successful
-workflow.sc.solo               tool.sc.count                  successful
-workflow.sc.subsample          manager                        successful
-workflow.sc.subsample          tool.sc.subsample_ctss         successful
-workflow.sc.subsample          tool.cm.remove_strand_invader  successful
-workflow.sc.subsample          tool.cm.cluster                successful
-workflow.sc.subsample          tool.cm.filter                 successful
-workflow.sc.subsample          tool.cm.ctss_to_bigwig         successful
-workflow.sc.subsample          tool.cm.annotate               successful
-workflow.sc.subsample          tool.sc.count                  successful
+CRE1                          CRE2                         coactivity
+chr10_101190280_101190781_-   chr10_101370561_101371062_-  -0.11747
+chr10_101190280_101190781_-   chr10_101491567_101492125_+  0.39047
+chr10_101190280_101190781_-   chr10_101491783_101492284_-  0.01331
+chr10_101370561_101371062_-   chr10_101190280_101190781_-  -0.11747
+chr10_101370561_101371062_-   chr10_101491567_101492125_+  -0.30085
+chr10_101370561_101371062_-   chr10_101491783_101492284_-  -0.01026
+chr10_101380086_101380587_-   chr10_101380794_101381295_+  -0.08749
+chr10_101380794_101381295_+   chr10_101380086_101380587_-  -0.08749
+chr10_101491567_101492125_+   chr10_101190280_101190781_-  0.39047
+chr10_101491567_101492125_+   chr10_101370561_101371062_-  -0.30085
+chr10_101491567_101492125_+   chr10_101491783_101492284_-  0.0341
+chr10_101491783_101492284_-   chr10_101190280_101190781_-  0.01331
+chr10_101491783_101492284_-   chr10_101370561_101371062_-  -0.01026
+chr10_101491783_101492284_-   chr10_101491567_101492125_+  0.0341
+chr10_101945538_101946039_+   chr10_101945685_101946186_-  -0.04648
+chr10_101945685_101946186_-   chr10_101945538_101946039_+  -0.04648
+chr10_102027294_102027795_-   chr10_102046013_102046828_-  0.01844
+chr10_102027294_102027795_-   chr10_102289535_102290036_-  0.23593
+chr10_102027294_102027795_-   chr10_102295299_102295800_+  0.02627
+
+#--- check cis-coactivity network
+gzip -dc ./demo/output/sc.link/demo/log/cicero.coactivity.network.tsv.gz | head -n 20
+
+CCANID                           CREID
+CCAN_chr10_102027395_102792196   chr10_102672325_102672826_+
+CCAN_chr10_102027395_102792196   chr10_102790607_102791339_+
+CCAN_chr10_102027395_102792196   chr10_102289535_102290036_-
+CCAN_chr10_102027395_102792196   chr10_102295299_102295800_+
+CCAN_chr10_102027395_102792196   chr10_102046013_102046828_-
+CCAN_chr10_102027395_102792196   chr10_102746899_102747400_+
+CCAN_chr10_102027395_102792196   chr10_102746902_102747654_-
+CCAN_chr10_102027395_102792196   chr10_102756412_102756913_+
+CCAN_chr10_102027395_102792196   chr10_102027294_102027795_-
+CCAN_chr10_102027395_102792196   chr10_102791429_102792296_+
+CCAN_chr10_102027395_102792196   chr10_102673005_102673506_-
+CCAN_chr10_1034402_1282508       chr10_1282407_1282908_-
+CCAN_chr10_1034402_1282508       chr10_1094738_1095693_-
+CCAN_chr10_1034402_1282508       chr10_1034001_1034502_+
+CCAN_chr10_1034402_1282508       chr10_1102543_1103044_-
+CCAN_chr10_1034402_1282508       chr10_1101951_1102886_+
+CCAN_chr10_103543152_104614260   chr10_104155091_104155592_+
+CCAN_chr10_103543152_104614260   chr10_104613618_104614134_+
+CCAN_chr10_103543152_104614260   chr10_103543051_103543552_-
 ```
+
 
 ## Run *SCAFE* on your own data 
 
@@ -362,9 +342,9 @@ We recommend most users to run *SCAFE* using workflows with default options. The
 
 ```shell
 #--- check out the help message of the three single cell workflows
-./scripts/workflow.sc.solo --help
-./scripts/workflow.sc.pool --help
-./scripts/workflow.sc.subsample --help
+scafe.workflow.sc.solo --help
+scafe.workflow.sc.pool --help
+scafe.workflow.sc.subsample --help
 
 ```
 ### Run *SCAFE* individual tools with custom options 
@@ -374,10 +354,10 @@ For the sake of flexibiity, *SCAFE* allows users to run individual tools with cu
 
 ```shell
 #--- check out the help message of tool.sc.bam_to_ctss
-./scripts/tool.sc.bam_to_ctss --help
+scafe.tool.sc.bam_to_ctss --help
 
 #--- run tool.sc.bam_to_ctss with custom options
-./scripts/tool.sc.bam_to_ctss \
+scafe.tool.sc.bam_to_ctss \
 --min_MAPQ 10 \
 --exclude_flag '128,4' \
 --overwrite=yes \
@@ -390,10 +370,10 @@ For the sake of flexibiity, *SCAFE* allows users to run individual tools with cu
 
 ```shell
 #--- check out the help message of tool.cm.remove_strand_invader
-./scripts/tool.cm.remove_strand_invader --help
+scafe.tool.cm.remove_strand_invader --help
 
 #--- run tool.cm.remove_strand_invader with custom options
-./scripts/tool.cm.remove_strand_invader \
+scafe.tool.cm.remove_strand_invader \
 --min_edit_distance=3 \
 --min_end_non_G_num=1 \
 --overwrite=yes \
@@ -406,10 +386,10 @@ For the sake of flexibiity, *SCAFE* allows users to run individual tools with cu
 
 ```shell
 #--- check out the help message of tool.cm.cluster
-./scripts/tool.cm.cluster --help
+scafe.tool.cm.cluster --help
 
 #--- run tool.cm.cluster with custom options
-./scripts/tool.cm.cluster \
+scafe.tool.cm.cluster \
 --min_cluster_count=10 \
 --min_summit_count=5 \
 --min_num_sample_expr_cluster=5 \
@@ -422,10 +402,10 @@ For the sake of flexibiity, *SCAFE* allows users to run individual tools with cu
 
 ```shell
 #--- check out the help message of tool.cm.filter
-./scripts/tool.cm.filter --help
+scafe.tool.cm.filter --help
 
 #--- run tool.cm.cluster with custom options
-./scripts/tool.cm.filter \
+scafe.tool.cm.filter \
 --default_cutoff=0.3 \
 --overwrite=yes \
 --ctss_bed_path=./demo/output/sc.solo/bam_to_ctss/demo/bed/demo.collapse.ctss.bed.gz \
@@ -441,10 +421,10 @@ For the sake of flexibiity, *SCAFE* allows users to run individual tools with cu
 
 ```shell
 #--- check out the help message of tool.cm.annotate
-./scripts/tool.cm.annotate --help
+scafe.tool.cm.annotate --help
 
 #--- run tool.cm.annotate with custom options
-./scripts/tool.cm.annotate \
+scafe.tool.cm.annotate \
 --CRE_extend_size=800 \
 --CRE_extend_upstrm_ratio=3 \
 --proximity_slop_rng=1000 \
@@ -457,14 +437,14 @@ For the sake of flexibiity, *SCAFE* allows users to run individual tools with cu
 ```
 
 ### Making a custom reference genome
-Currently, four reference genomes ara available. See *./script/download.resources.genome* for downloading. Alternatively, some users might work on genomes of other organisms, or prefer to use custom gene models for annotating tCREs.  *tool.cm.prep_genome* converts user-supplied genome *\*.fasta* and gene model *\*.gtf* into necessary files for *SCAFE*. You can check out the help message for inputs of *tool.cm.prep_genome* and then test run a demo using TAIR10 genome with AtRTDv2 gene model.
+Currently, four reference genomes ara available. See `./scripts/scafe.download.resources.genome` for downloading. Alternatively, some users might work on genomes of other organisms, or prefer to use custom gene models for annotating tCREs.  *tool.cm.prep_genome* converts user-supplied genome *\*.fasta* and gene model *\*.gtf* into necessary files for *SCAFE*. You can check out the help message for inputs of *tool.cm.prep_genome* and then test run a demo using TAIR10 genome with AtRTDv2 gene model.
 
 ```shell
 #--- check out the help message of tool.cm.prep_genome
-./scripts/tool.cm.prep_genome --help
+scafe.tool.cm.prep_genome --help
 
 #--- run the tool on the TAIR10 assembly with gene model AtRTDv2 
-./scripts/tool.cm.prep_genome \
+scafe.tool.cm.prep_genome \
 --overwrite=yes \
 --gtf_path=./demo/input/genome/TAIR10.AtRTDv2.gtf.gz \
 --fasta_path=./demo/input/genome/TAIR10.genome.fa.gz \
@@ -478,9 +458,9 @@ Currently, four reference genomes ara available. See *./script/download.resource
 
 ```shell
 #--- check out the help message of the three single cell workflows
-./scripts/workflow.bk.solo --help
-./scripts/workflow.bk.pool --help
-./scripts/workflow.bk.subsample --help
+scafe.workflow.bk.solo --help
+scafe.workflow.bk.pool --help
+scafe.workflow.bk.subsample --help
 ```
 
 
