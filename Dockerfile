@@ -2,11 +2,15 @@
 FROM tomkellygenetics/universc:latest
 
 #---[2021/03/22 15:53] update apt-get, grab R 3.6.3 and perl
-RUN echo "deb http://cloud.r-project.org/bin/linux/debian stretch-cran35/" >>/etc/apt/sources.list \
+RUN apt update -qq \
+ && apt install --no-install-recommends software-properties-common dirmngr \
+ && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 \
+ && add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/" \
+ && echo "deb http://cloud.r-project.org/bin/linux/debian stretch-cran35/" >>/etc/apt/sources.list \
  && apt-get update \
  && apt-get upgrade -y \
  && apt-get install -y perl git wget \
- && apt-get install -y --allow-unauthenticated r-base-core
+ && apt-get install -y --allow-unauthenticated r-base-core r-base
 
 #---[2021/03/22 15:54] install missing libs for compile R packages
 RUN apt-get -y install libcurl4-gnutls-dev \
